@@ -1,0 +1,175 @@
+'''
+matplotlib:专门用于开发2D或3D图表的包
+绘制流程：
+（1）创建画布：plt.figure(figsize=(20,8),dpi=100)
+（2）绘制图像：plt.plot(x,y)
+（3）显示图像：plt.show()
+核心参数：
+（1）figure;
+（2）plot;
+（3）show;
+（4）title_lable;
+（5）x_ticks/y_ticks;（添加刻度）
+（6）legend;（添加图例）
+（7）grid;（添加网格）
+'''
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import random
+plt.rcParams['font.sans-serif'] = ['SimHei']   # 设置黑体，支持中文
+plt.rcParams['axes.unicode_minus'] = False    # 防止负号变成方框
+# # 操作一：
+# plt.figure(figsize=(10,5),dpi=100)
+# # 参数一：画布大小（宽，高），参数二：dpi（像素密度）
+# # 操作二：
+# plt.plot([1,2,3,4,5],[13,5,16,17,8])
+# # 参数一：x轴数据，参数二：y轴系数
+# #操作三：
+# plt.show()
+# # 具体绘图
+#-----------------------matplotlib准备数据-----------------------
+# # 1. 准备x轴(60分钟) 和 y轴(每分钟的温度) 的数据.
+# x = range(60)                # x的值: 0 ~ 60 包左不包右
+# y_beijing = [random.uniform(15, 18) for i in x]  # i的值: 0 ~ 60 包左不包右
+#
+# # 2. 创建画布
+# plt.figure(figsize=(10, 5), dpi=80)
+#
+# # 3. 开始绘图.
+# plt.plot(x, y_beijing, color='red')    # color: 颜色
+#
+# # 4. 具体的绘图动作.
+# plt.show()
+
+#-----------------------matplotlib添加刻度和网格-----------------------
+# # 1. 准备x轴(60分钟) 和 y轴(每分钟的温度) 的数据.
+# x = range(60)                # x的值: 0 ~ 60 包左不包右
+# y_beijing = [random.uniform(15, 18) for i in x]  # i的值: 0 ~ 60 包左不包右
+#
+# # 2. 创建画布
+# plt.figure(figsize=(10, 5), dpi=80)
+#
+# # 3. 开始绘图.
+# plt.plot(x, y_beijing, color='red')    # color: 颜色
+#
+# # 4. 添加x轴和y轴的刻度信息.
+# # 4.1 准备X轴 刻度信息.
+# x_ticks_label = [f'11点{i}分' for i in x]   # i的值: 0 ~ 60 包左不包右
+# y_ticks = range(40)
+#
+# # 4.2 具体的添加x轴和y轴刻度信息的动作.
+# plt.xticks(x[::5], x_ticks_label[::5])   # 参1: x轴刻度值 参2: x轴刻度值对应的标签
+# plt.yticks(y_ticks[::5])                 # 参1: y轴刻度值
+#
+# # 5. 添加网格.
+# # 参1: 网格线的样式 --  -.  :
+# # 参2: 网格线的透明度
+# plt.grid(linestyle='--', alpha=0.3)
+#
+# # 6. 具体的绘图动作.
+# plt.show()
+
+#-----------------------matplotlib标题和x/y轴标签-----------------------
+# x = range(60)
+# y_shanghai = [random.uniform(15, 18) for i in x]
+#
+# # 1.创建画布
+# plt.figure(figsize=(20, 8), dpi=100)
+# # 2.绘制图像
+# plt.plot(x, y_shanghai)
+# # 2.1 添加x,y轴刻度
+# # 构造x,y轴刻度标签
+# x_ticks_label = ["11点{}分".format(i) for i in x]
+# y_ticks = range(40)
+# # 刻度显示
+# plt.xticks(x[::5], x_ticks_label[::5])
+# plt.yticks(y_ticks[::5])
+# # 2.2 添加网格显示
+# plt.grid(True, linestyle="--", alpha=0.5)
+# # 2.3 添加描述信息
+# plt.xlabel("时间")
+# plt.ylabel("温度")
+# plt.title("中午11点--12点某城市温度变化图", fontsize=20)  # fontsize为字体！！！
+# # 2.4 图像保存
+# # plt.savefig("D:/Users/H/Desktop/figure.png")
+# # 3.图像显示
+# plt.show()
+
+#-----------------------matplotlib多图绘制和legend-----------------------
+# # （1）数据准备
+# x=range(60)
+# y_beijing=[random.uniform(15,18) for i in range(60)]
+# y_shanghai=[random.uniform(20,25) for a in range(60)]
+# # （2）画布
+# plt.figure(figsize=(20,8),dpi=100)
+# # （3）绘制两个折线图
+# plt.plot(x,y_beijing,color='red',linestyle='--',label='北京')
+# plt.plot(x,y_shanghai,color='blue',linestyle='-',label='上海')
+# # （4）刻度
+# x_ticks=[f'11点{i}分'for i in x]
+# y_ticks=range(30)
+#
+# plt.xticks(x[::5],x_ticks[::5])   # 用后者替换前者！！！
+# plt.yticks(y_ticks[::2])
+# # （5）标题
+# plt.title('北京上海1个小时内的气温折线图',fontsize=20)
+# plt.xlabel('时间',fontsize=12)
+# plt.ylabel('温度',fontsize=12)
+#
+# # （6）网格
+# plt.grid(linestyle='--',alpha=0.5)
+#
+# # （7）图例
+# plt.legend(loc='best')   # 注意：需要在plt.plot的过程中加入label的标签
+#
+# # （8）绘图到终端
+# plt.show()
+
+# -------------------常见的绘图方式----------------------
+# plot.bar():条形图；plot.hist():直方图；plot.pie():饼图；plot.scatter():散点图；
+
+
+
+
+
+
+
+#------------------------------官网案例：https://matplotlib.org/stable/gallery/index.html----------------------
+
+# import matplotlib.pyplot as plt
+# import numpy as np
+#
+# import matplotlib.cbook as cbook
+#
+# # Load a numpy record array from yahoo csv data with fields date, open, high,
+# # low, close, volume, adj_close from the mpl-data/sample_data directory. The
+# # record array stores the date as an np.datetime64 with a day unit ('D') in
+# # the date column.
+# price_data = cbook.get_sample_data('goog.npz')['price_data']
+# price_data = price_data[-250:]  # get the most recent 250 trading days
+#
+# delta1 = np.diff(price_data["adj_close"]) / price_data["adj_close"][:-1]
+#
+# # Marker size in units of points^2
+# volume = (15 * price_data["volume"][:-2] / price_data["volume"][0])**2
+# close = 0.003 * price_data["close"][:-2] / 0.003 * price_data["open"][:-2]
+#
+# fig, ax = plt.subplots()
+# ax.scatter(delta1[:-1], delta1[1:], c=close, s=volume, alpha=0.5)
+#
+# ax.set_xlabel(r'$\Delta_i$', fontsize=15)
+# ax.set_ylabel(r'$\Delta_{i+1}$', fontsize=15)
+# ax.set_title('Volume and percent change')
+#
+# ax.grid(True)
+# fig.tight_layout()
+#
+# plt.show()
+
+
+
+
+
+
+
