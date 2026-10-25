@@ -15,6 +15,10 @@ import numpy as np
 import pymysql as sql
 from sqlalchemy import create_engine
 import openpyxl
+import matplotlib.pyplot as plt
+import seaborn as sns
+plt.rcParams['font.sans-serif'] = ['SimHei']   # 设置黑体，支持中文
+plt.rcParams['axes.unicode_minus'] = False    # 防止负号变成方框
 #---------------------创建series对象--------------------------
 # # （1）创建series对象，采用：默认自增索引
 # data1=pd.Series([1,2,3,4])
@@ -508,8 +512,8 @@ print('-----------------------综合练习题---------------------------')
 '''
 
 # （1）数据准备：
-info=pd.read_csv('D:/Users/H/Desktop/Agent自动项目库/sales_fact.csv')
-info=info.head(100)
+# info=pd.read_csv('D:/Users/H/Desktop/Agent自动项目库/sales_fact.csv')
+# info=info.head(100)
 # print(info)
 # （2）场景一：按照单列分组
 # info.groupby('city')
@@ -542,11 +546,133 @@ info=info.head(100)
 写法：info.pivot_table(index='',columns='',values='revenue',aggfunc='sum')
 '''
 # 需求：根据城市，销售渠道分组，计算销售金额的总和
-info5=info.groupby(['city','channel'],as_index=False).agg({'revenue':'sum'})   # 分组聚合写法
-# print(info5)
-info6=info.pivot_table(index='city',columns='channel',values='revenue',aggfunc='sum')
-# print(info6)
+# info5=info.groupby(['city','channel'],as_index=False).agg({'revenue':'sum'})   # 分组聚合写法
+# # print(info5)
+# info6=info.pivot_table(index='city',columns='channel',values='revenue',aggfunc='sum')
+# # print(info6)
 # 数据透视表操作总结：先分组聚合看结构，（一列做表的index,一列做columns，一列做values，一列做功能）
+#----------------------------------------------------------------------------------------------------------------
+
+'''
+知识点补充：
+（1）dataframe数据细节：data['列名']：series对象，data[data.['列名']>100]（布尔型）：datafrme对象
+（2）series和dataframe对象去重操作的区别：一个是unique(),一个是drop_duplicates()
+（3）series对象变dataframe对象的方式：data[['列名']]，注意:describe()可以同时series和dataframe
+'''
+#--------------------pandas综合练习题---------------------
+#（1）拿数据
+# data=pd.read_csv('D:/Users/H/Desktop/Agent自动项目库/pandas练习数据.csv')
+# # print(data)
+# data.columns=['district', 'community', 'title', 'layout', 'area_sqm', 'price', 'floor', 'build_info', 'orientation', 'update_time', 'visitors', 'decoration', 'elevator']
+# # print(data)
+#1. 找到租金最低，和租金最高的房子
+# data1=data.sort_values(by=['price'],ascending=False).head(1)
+# data2=data.sort_values(by=['price'],ascending=False).tail(1)
+# print(data2)
+#2. 找到最近新上的 10 套房源
+# data3=data.sort_values(by='update_time',ascending=False).head(10)
+# print(data3)
+#3. 查看所有更新时间
+# data4=data[['district','update_time']]
+# print(data4)
+#4. 查看看房人数的平均值，最大值，最小值
+# data5=data.visitors.describe()
+# print(data5)
+#5. 查看不同看房人数的房源数量，`as_index = False` 分组字段不作为行索引（默认为 True）
+# data6=data.groupby('visitors',as_index=False).agg({'district':'count'})
+# print(data6)
+#6. 查看房租价格的分布，例如：平均值，标准差，中位数…
+# data7=data.price.describe()
+# print(data7)
+#7. 找到看房人数最多的朝向
+# data7=data.replace({'district':{'团结湖租房':"团结"}})    # 改名操作！！！
+# print(data7)
+# data8=data.sort_values(by='visitors',ascending=False).head(1).orientation
+# print(data8)
+#8. 查找最受欢迎的房型
+# data9=data.sort_values(by='visitors',ascending=False).head(1).layout
+# print(data9)
+#9. 查找房子的平均租房价格（元 / 平米）
+# data['avg_price']=data.apply(lambda x:x['price']/x['area_sqm'], axis='columns')
+# print(data)
+# apply方法 data.apply(fun,axis=0/1)
+
+# ----------------------------pandas和seaborn绘图-------------------------------
+##1、加载数据集，并设置 第1列为 索引列(语法模板！！！)，底层都是matplotlib
+# info=pd.read_csv('位置',index_col=0)
+# # print(info)
+# # 2、查看数据集
+# info.info()
+# info.describe()
+# # 3、需求：根据产地province进行分组，基于points列进行统计即可
+# info1=info.groupby('province',as_index=False).agg('point','count').sort_values('count',ascending=False).head(10)
+# info2=info1.get_group('beijing')  # 写法错误：get_group只能作用于groupby对象！！！
+# 注意：重新理解分组（按照某字段进行分组，get_group只是拿到某一组）+聚合（将分组字段重构，只剩下分组字段列和聚合字段列）
+# 4、针对上述结果进行绘图操作(随机数据)
+# data={
+#     'province':['beijing','shanghai','shenzhen','guangzhou','xiamen','nanchang'],
+#     'count':[50,32,42,33,22,10]
+# }
+# data1=pd.DataFrame(data)
+# data1['count']=data1['count']/(data1['count'].sum())  # 求比例写法
+# 折线图
+# data1.plot.line(x='province',y='count',figsize=(10,5),color=['r','g','b','y','c','m'],fontsize=15)
+# 操作：定义参数，用字典封装后解析
+# info_kwargs=dict(x='province',y='count',figsize=(10,5),color=['r','g','b','y','c','m'],fontsize=15)
+# # 柱状图
+# # data1.plot.bar(**info_kwargs)
+# # 面积绘图
+# # data1.plot.area(**info_kwargs)
+# # 直方图
+# data1.plot.hist(**info_kwargs)
+# # 注意：条形图和直方图的区别：前者展示离散数字的分别，后者展示连续数值的频次分布（横坐标：连续区间，纵坐标：频次/次数）
+# plt.show()  # 窗口显示
+
+# ------------------------------seaborn(sns)绘图--------------------------------
+# 准备数据
+# 固定随机种子，每次运行生成一样的数据
+np.random.seed(42)
+n = 200
+
+# 生成模拟数据，贴合tips数据集的数值特征
+total_bill = np.round(np.random.uniform(5, 55, size=n), 2)
+tip = np.round(total_bill * np.random.uniform(0.05, 0.22, size=n), 2)
+sex = np.random.choice(["Female", "Male"], size=n, p=[0.4, 0.6])
+
+data = {
+    "total_bill": total_bill.tolist(),
+    "tip": tip.tolist(),
+    "sex": sex.tolist()
+}
+df = pd.DataFrame(data)
+# # 1、创建画布
+# fig,ax=plt.subplots(figsize=(10,5))
+# # 2、绘制直方图图形
+# # 参1：data:数据集
+# # 参2：x:x轴列名
+# # 参3：hue:分组依据列名
+# sns.histplot(data=df,x='total_bill',hue='sex')
+# # 3、设置标题
+# ax.set_title('男女总账单情况',fontsize=20)
+# # 4、展示图形
+# plt.show()
+
+# -------------------散点图：scatter()---------------------
+# 创建画布
+# fig, ax = plt.subplots(figsize=(10,5))
+# # 需求描述总账单和小费情况(绘图)
+# sns.scatterplot(x="total_bill", y="tip", data=df,hue='sex')
+# # 设置标题
+# ax.set_title('男女消费总消费和消费分布情况')
+# # 看
+# plt.show()
+
+
+
+
+
+
+
 
 
 
