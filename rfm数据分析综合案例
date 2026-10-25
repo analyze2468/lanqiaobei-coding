@@ -1,0 +1,168 @@
+# （1）导包
+import time
+from unittest.mock import inplace
+import openpyxl
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import sqlalchemy as create_engine
+from pyecharts.charts import Bar3D
+from pyecharts.commons.utils import JsCode
+import pyecharts.options as opts
+from sqlalchemy import create_engine
+
+'''
+数据分析挖掘项目全流程：加载数据、预处理、统计分析、导出结果、可视化
+'''
+
+
+# （2）加载数据
+sheet_name=['2015','2016','2017','2018','会员等级']   # excel表中的多表sheet对象
+data=pd.read_excel('D:/Users/H/Desktop/Agent自动项目库/rfm订单数据.xlsx',sheet_name=sheet_name)
+# 注意：data为字典对象——————{'2015':DataFrame1,'2016':DataFrame2……………………}
+# print(data['2015'])
+# 查看2015表格的基本信息和详细信息
+# print(data['2015'].info())
+# print(data['2015'].describe())
+# 查看五个表的基本信息和详细信息
+# for i in sheet_name:
+#     print(data[i].info())
+#     print(data[i].describe())
+# 产生非法值（金额小于1）
+# print(data['2015']['订单金额'].min())  # 查看发现非法最小值为负数！！！
+# 非法值替换方案一：单值替换—————replace方法，把最小值负数替换成小数，问题：不是只有最小值一个是负数！！！
+# for i in sheet_name[:-1]:
+#     data[i]['订单金额']=data[i]['订单金额'].replace({data[i]['订单金额'].min():0.03})
+#     print(data[i].info())
+#     print(data[i].describe())
+# 非法值替换方案二：条件替换————loc方法/data[i]['订单金额'].where(data[i]['订单金额']<=0,0.03)
+# for i in sheet_name[:-1]:
+#     data[i].loc[data[i]['订单金额']<=0,'订单金额']=0.03
+#     print(data[i].info())
+#   print(data[i].describe())
+
+# （3）数据预处理
+# 1、需要处理的动作：1、删除缺失值 2、过滤出金额 3、固定时间节点以每年最后一天为参考时间
+for i in sheet_name[:-1]:
+    # 1、删除缺失值
+    data[i]=data[i].dropna()
+    # 2、过滤出金额>1的订单
+    data[i]=data[i].query('订单金额>1')
+    # 方式二：data[布尔series]做筛选！！！
+    # data[i]=data[i][data[i]['订单金额']>1]
+    # 3、固定时间节点，以每年最后1天当作当年的分析点
+    data[i]['max_year_date']=data[i]['提交日期'].max()
+# 5、查看处理后的数据
+# for i in sheet_name[:-1]:
+#     print(data[i].info())
+#     print(data[i].describe())
+# 问题分析：缺失值，垃圾数，日期参考已处理，但索引值和总数据个数不匹配！！！（原因：删除缺失值过程中index错乱）
+# 6、找到差异值进行合并表格（列合并+产生一列特值）
+info=list(data.values())[:-1]  # 把四个表格的DataFrame对象拿过来放入列表！！！
+# print(type(info))
+info1=pd.concat(info,ignore_index=True)  # 表列合并，并且重置索引(ignor_index)！！！
+# print(info1.info())
+# print(info1.describe().T)
+info1['year']=info1['提交日期'].dt.year   # 新增区分值一列，彻底融合四表！！！
+# print(info1)
+# 7、生成每个订单的日期差
+info1['lastest_date']=info1["max_year_date"]-info1['提交日期']
+info1['lastest_date']=info1['lastest_date'].dt.days
+# print(info1)
+# 8、R、F、M的产生 ， 注意1:分组的本质是根据分组值重新生成一个表格；注意2：分组后分组字段会变成索引，因此要加as_index=False；注意3：分组后赋值，把所有的分类组别放同一个表里！！！
+info2=info1.groupby(['year','会员ID'],as_index=False).agg({
+    'lastest_date':'min',
+    '订单号':'count',
+    '订单金额':'sum'
+})
+info2.columns=['year','会员ID','r','f','m']
+# print(info2)
+# # 结果分析：已分组后产生r/f/m列，接着给r/f/m进行区间划分后打分
+# # 9、区间划分后打分：划分区间，分别给出：RFM的评分，依据：r:最近一次的购买时间 越小分越高，f：购买次数 越大分越高，m:购买金额 越大分越高
+# # 给区间确立边界：
+r_bins=[-1,79,255,365]
+info2['set_interval_r']=pd.cut(info2.r,bins=r_bins,labels=[3,2,1]) # 注意：cut读取bins包右不包左！！！
+# print(info2['set_interval'])                    # 含义解析：新生成一列区间，和r进行对应！！！
+# 同理对f和m生成区间列
+f_bins=[0,2,5,130]
+info2['set_interval_f']=pd.cut(info2.f,bins=f_bins,labels=[1,2,3])
+m_bins=[1,69,1199,206252]
+info2['set_interval_m']=pd.cut(info2.m,bins=m_bins,labels=[1,2,3])
+# print(info2)
+
+# 打分操作：在区间的基础上，贴上label把区间列变成分数,操作参考上！！！
+# 方式二：
+# info2['set_interval_r']=pd.cut(info2.r,bins=r_bins,labels=[i for i in range(len(r_bins)-1,0,-1)])
+# info2['set_interval_f']=pd.cut(info2.f,bins=f_bins,labels=[i for i in range(0,len(f_bins)-1)])
+# info2['set_interval_m']=pd.cut(info2.m,bins=m_bins,labels=[i for i in range(0,len(m_bins)-1)])
+
+# 预处理最后一步：评分汇总（数据类型转化————np,astype）
+info2['grop']=info2['set_interval_r'].astype(str)+info2['set_interval_f'].astype(str)+info2['set_interval_m'].astype(str)
+# print(info2)
+# 写入excel表格
+# info2.to_excel('D:/Users/H/Desktop/Agent自动项目库/rfm优化后数据.xlsx',index=False,engine='openpyxl')
+# 写入mysql数据库
+# engine=create_engine('mysql+pymysql://root:2006@localhost:3306/data_analyze?charset=utf8')
+# info2.to_sql('rfm',engine,index=False,if_exists='replace')
+
+# 10、可视化
+# # 准备可视化数据，即：分组评分，统计年份，相同评分个数
+# display_data=info2.groupby(['grop','year'],as_index=False).agg({'会员ID':'count'})
+# display_data.year=display_data.year.astype(str)
+# display_data.columns=['score','year','number']
+# print(display_data)
+# print(display_data.pivot_table(index='year',columns='grop',values='会员ID',aggfunc='count'))  # 数据透视表
+
+# --------------------------绘制图形---------------------------------
+
+# # 2. 可视化，显示图形
+# # 颜色池
+# range_color = ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf',
+#                '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026']
+#
+# range_max = int(display_data['number'].max())
+# c = (
+#     Bar3D()  # 设置了一个3D柱形图对象
+#     .add(
+#         "",  # 图例
+#         [d.tolist() for d in display_data.values],  # 数据
+#         xaxis3d_opts=opts.Axis3DOpts(type_="category", name='分组名称'),  # x轴数据类型，名称，rfm_group
+#         yaxis3d_opts=opts.Axis3DOpts(type_="category", name='年份'),  # y轴数据类型，名称，year
+#         zaxis3d_opts=opts.Axis3DOpts(type_="value", name='会员数量'),  # z轴数据类型，名称，number
+#     )
+#     .set_global_opts(  # 全局设置
+#         visualmap_opts=opts.VisualMapOpts(max_=range_max, range_color=range_color),  # 设置颜色，及不同取值对应的颜色
+#         title_opts=opts.TitleOpts(title="RFM分组结果"),  # 设置标题
+#     )
+# )
+# c.render('D:/Users/H/Desktop/rfm_3D.html')  # 数据保存到本地的网页中
+# # c.render_notebook() #在notebook中显示
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
